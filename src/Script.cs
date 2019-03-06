@@ -3231,35 +3231,24 @@ PhysicalGunObject/
             private static byte SZ_SPACE;
             private static byte SZ_SHYPH;
 
-            public static int GetWidth(string text, bool memoize = false)
+            public static int GetWidth(string text, bool memorize = false)
             {
-                int width;
+                int width = 0;
                 if (!textWidth.TryGetValue(text, out width))
                 {
-                    // this isn't faster (probably slower) but it's less "complex"
-                    // according to SE's silly branch count metric
-                    Dictionary<char, byte> cW = charWidth;
-                    string t = text + "\0\0\0\0\0\0\0";
-                    int i = t.Length - (t.Length % 8);
-                    byte w0, w1, w2, w3, w4, w5, w6, w7;
-                    while (i > 0)
+                    foreach (char c in text)
                     {
-                        cW.TryGetValue(t[i - 1], out w0);
-                        cW.TryGetValue(t[i - 2], out w1);
-                        cW.TryGetValue(t[i - 3], out w2);
-                        cW.TryGetValue(t[i - 4], out w3);
-                        cW.TryGetValue(t[i - 5], out w4);
-                        cW.TryGetValue(t[i - 6], out w5);
-                        cW.TryGetValue(t[i - 7], out w6);
-                        cW.TryGetValue(t[i - 8], out w7);
-                        width += w0 + w1 + w2 + w3 + w4 + w5 + w6 + w7;
-                        i -= 8;
+                        width += charWidth[c];
                     }
-                    if (memoize)
-                        textWidth[text] = width;
                 }
+
+                if (memorize)
+                {
+                    textWidth[text] = width;
+                }
+
                 return width;
-            } // GetWidth()
+            }
 
             public static string Format(string text, int width, out int unused, int align = -1, bool memoize = false)
             {
@@ -3305,6 +3294,7 @@ PhysicalGunObject/
 
             public static void Init()
             {
+                charWidth['\0'] = 0;
                 InitChars(0, "\u2028\u2029\u202F");
                 InitChars(7, "'|\u00A6\u02C9\u2018\u2019\u201A");
                 InitChars(8, "\u0458");
@@ -3338,24 +3328,11 @@ PhysicalGunObject/
 
             private static void InitChars(byte width, string text)
             {
-                // more silly loop-unrolling, as in GetWidth()
-                Dictionary<char, byte> cW = charWidth;
-                string t = text + "\0\0\0\0\0\0\0";
-                byte w = Math.Max((byte)0, width);
-                int i = t.Length - (t.Length % 8);
-                while (i > 0)
+                foreach (char c in text)
                 {
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
-                    cW[t[--i]] = w;
+                    charWidth[c] = width;
                 }
-                cW['\0'] = 0;
-            } // InitChars()
+            }
 
             private int numCols;
             private int numRows;
